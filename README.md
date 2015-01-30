@@ -1,6 +1,6 @@
 # GoKiss (by team go_ne)
 
-[![Build Status](https://travis-ci.org/Tobscher/go_ne.svg?branch=configuration)](https://travis-ci.org/Tobscher/go_ne)
+[![Build Status](https://travis-ci.org/tobscher/go_ne.svg?branch=configuration)](https://travis-ci.org/tobscher/go_ne)
 
 ## Inspiration
 
