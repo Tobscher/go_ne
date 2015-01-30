@@ -3,10 +3,7 @@ package configuration
 import "testing"
 
 func TestConfigVars(t *testing.T) {
-	config, err := Load("./fixtures/example.yml")
-	if err != nil {
-		t.Error(err)
-	}
+	config := Load("./fixtures/example.yml")
 
 	expected := 2
 	vars := len(config.Vars)
@@ -24,10 +21,7 @@ func TestConfigVars(t *testing.T) {
 }
 
 func TestHosts(t *testing.T) {
-	config, err := Load("./fixtures/example.yml")
-	if err != nil {
-		t.Error(err)
-	}
+	config := Load("./fixtures/example.yml")
 
 	expected := 2
 	servers := len(config.Hosts)
@@ -99,10 +93,7 @@ func TestHosts(t *testing.T) {
 }
 
 func TestTasks(t *testing.T) {
-	config, err := Load("./fixtures/example.yml")
-	if err != nil {
-		t.Error(err)
-	}
+	config := Load("./fixtures/example.yml")
 
 	if len(config.Tasks) != 2 {
 		t.Errorf("Expected 2 tasks got %v.", len(config.Tasks))

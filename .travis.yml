@@ -1,0 +1,7 @@
+language: go
+
+script:
+  - scripts/tests
+
+go:
+  - 1.4
