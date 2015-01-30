@@ -13,8 +13,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/gophergala/go_ne/plugins/shared"
-	"github.com/mgutz/ansi"
+	"github.com/tobscher/go_ne/plugins/shared"
 )
 
 // PluginCache stores loaded plugins
@@ -30,29 +29,39 @@ var loadedPlugins = PluginCache{
 var maxAttempts = 5
 var startPort = 8000
 
+// Plugin stores information about the plugin and how to
+// connect to it.
 type Plugin struct {
 	information *PluginInformation
 	client      *rpc.Client
 }
 
+// PluginInformation stores the details about the plugin
+// such as the host, port and the underlying command
 type PluginInformation struct {
 	Host string
 	Port string
 	Cmd  *exec.Cmd
 }
 
+// Address returns the full address and port, e.g. localhost:8001
 func (p *PluginInformation) Address() string {
 	return fmt.Sprintf("%v:%v", p.Host, p.Port)
 }
 
+// StartPlugin starts the plugin with the given name.
+// This will try to boot an application called `plugin-<plugin-name>`
+//
+// This method will return an error when the plugin can not be found
+// or the plugin exits with an exit code other than 0.
 func StartPlugin(name string) (*Plugin, error) {
 	command := fmt.Sprintf("%v-%v", pluginPrefix, name)
 	host := "localhost"
 	port := nextAvailblePort()
 
-	fmt.Println(ansi.Color(fmt.Sprintf("-- Starting plugin `%v` on port %v", name, port), "black+h"))
+	logger.Debugf("Starting plugin `%v` on port %v", name, port)
 
-	// Log to logfile
+	// Pass host and port to plugin
 	cmd := exec.Command(command,
 		fmt.Sprintf("-host=%v", host),
 		fmt.Sprintf("-port=%v", port),
@@ -60,6 +69,7 @@ func StartPlugin(name string) (*Plugin, error) {
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
+	// Start the plugin
 	err := cmd.Start()
 	if err != nil {
 		return nil, err
@@ -71,13 +81,13 @@ func StartPlugin(name string) (*Plugin, error) {
 		Cmd:  cmd,
 	}
 
+	// Try to establish connection to plugin
 	var conn net.Conn
 	for i := 1; i <= maxAttempts; i++ {
-		fmt.Print(ansi.Color(fmt.Sprintf("-- Attempt %v to connect to plugin...", i), "black+h"))
+		logger.Tracef("Attempt %v to connect to plugin...", i)
 
 		conn, err = net.Dial("tcp", info.Address())
 		if err != nil {
-			fmt.Println(ansi.Color("FAILED", "black+h"))
 			time.Sleep(100 * time.Millisecond)
 
 			if i == maxAttempts {
@@ -87,8 +97,6 @@ func StartPlugin(name string) (*Plugin, error) {
 
 			continue
 		}
-
-		fmt.Println(ansi.Color("OK", "black+h"))
 
 		break
 	}
@@ -107,6 +115,8 @@ func StartPlugin(name string) (*Plugin, error) {
 	return plugin, nil
 }
 
+// GetPlugin returns a loaded plugin. If the plugin has
+// not been loaded yet, it will load it.
 func GetPlugin(name string) (*Plugin, error) {
 	var val *Plugin
 	var ok bool
@@ -122,6 +132,8 @@ func GetPlugin(name string) (*Plugin, error) {
 	return val, nil
 }
 
+// GetCommands asks the plugin (via RPC) which commands should
+// be executed on the remote system.
 func (p *Plugin) GetCommands(args shared.Args) ([]*Command, error) {
 	var reply shared.Response
 	var commands []*Command
@@ -148,14 +160,15 @@ func nextAvailblePort() string {
 	return strconv.Itoa(startPort)
 }
 
+// StopAllPlugins will stop all plugins which are currently running.
+//
 // BUG(Tobscher) Send signal to gracefully shutdown the plugin
-// BUG(Tobscher) Use lock
 func StopAllPlugins() {
 	loadedPlugins.Lock()
 	defer loadedPlugins.Unlock()
 
 	for k, v := range loadedPlugins.cache {
-		fmt.Println(ansi.Color(fmt.Sprintf("-- Stopping plugin: %v", k), "black+h"))
+		logger.Debugf("Stopping plugin: %v", k)
 		if err := v.information.Cmd.Process.Kill(); err != nil {
 			log.Println(err)
 		}

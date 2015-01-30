@@ -2,16 +2,17 @@ package core
 
 import (
 	"errors"
-	"flag"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
+	"strconv"
 	"strings"
 
 	"golang.org/x/crypto/ssh"
 
-	"github.com/mgutz/ansi"
+	"github.com/tobscher/go_ne/configuration"
+	"github.com/tobscher/go_ne/logging"
 )
 
 // Remote describes a runner which runs task
@@ -24,10 +25,8 @@ type Remote struct {
 // tasks on a remote system.
 //
 // An SSH connection will be establishe.
-func NewRemoteRunner(options ConfigServer) (*Remote, error) {
-	flag.Parse()
-
-	client, err := createClient(options.Username, options.Password, options.Host, options.Port, options.KeyPath)
+func NewRemoteRunner(host *configuration.Host) (*Remote, error) {
+	client, err := createClient(host.User, host.Password, host.Host, strconv.Itoa(host.Port), host.PrivateKey)
 	if err != nil {
 		return nil, err
 	}
@@ -45,12 +44,20 @@ func (r *Remote) Run(task Task) error {
 	}
 	defer session.Close()
 
-	fmt.Println(ansi.Color(fmt.Sprintf("Executing `%v %v`", task.Name(), strings.Join(task.Args(), " ")), "green"))
+	args := ""
+	if len(task.Args()) > 0 {
+		args = strings.Join(task.Args(), " ")
+	}
+
+	logger.Debugf("Executing `%v %v`", task.Name(), args)
 
 	cmd := fmt.Sprintf("%v %v", task.Name(), strings.Join(task.Args(), " "))
 
-	session.Stdout = os.Stdout
-	session.Stderr = os.Stderr
+	if logger.Level > logging.INFO {
+		session.Stdout = os.Stdout
+		session.Stderr = os.Stderr
+	}
+
 	if err := session.Start(cmd); err != nil {
 		return err
 	}
@@ -95,7 +102,7 @@ func createClient(username, password, host, port, key string) (*ssh.Client, erro
 
 	remoteServer := fmt.Sprintf("%v:%v", host, port)
 
-	fmt.Println(ansi.Color(fmt.Sprintf("Connecting to %v@%v", username, remoteServer), "green"))
+	logger.Infof("Connecting to %v@%v", username, remoteServer)
 	client, err := ssh.Dial("tcp", remoteServer, config)
 	if err != nil {
 		return nil, err

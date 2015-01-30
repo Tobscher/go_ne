@@ -1,0 +1,39 @@
+# Global vars
+vars:
+  application: go-example-app
+  version: 0.1
+
+# Hosts
+hosts:
+  - host: localhost
+    connection: local
+    user: foo
+    password: secret
+    roles:
+      - docker
+      - web
+    tasks:
+      - task: "whoami"
+        shell:
+          command: whoami
+      - task: Custom plugin
+        foo:
+          option: 1
+          option: 2
+  - host: vagrant
+    sudo: true
+    user: vagrant
+    private_key: $HOME/.ssh/vagrant
+    port: 2222
+    roles:
+      - docker
+      - db
+
+# Global tasks
+tasks:
+  - task: Environment
+    shell:
+      command: env
+  - task: Go version
+    shell:
+      command: go version

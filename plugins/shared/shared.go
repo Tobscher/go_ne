@@ -1,10 +1,12 @@
 package shared
 
+import "github.com/tobscher/go_ne/configuration"
+
 // Args describes the args for the remote call.
 type Args struct {
 	Environment []string
 	Args        []string
-	Options     map[string]interface{}
+	Options     configuration.OptionCollection
 }
 
 // Command describes the command and its args to run.

@@ -8,13 +8,14 @@ import (
 	"net/rpc"
 	"net/rpc/jsonrpc"
 
-	"github.com/gophergala/go_ne/plugins/shared"
-	"github.com/mgutz/ansi"
+	"github.com/tobscher/go_ne/logging"
+	"github.com/tobscher/go_ne/plugins/shared"
 )
 
 var host = flag.String("host", "localhost", "host for plugin server")
 var port = flag.String("port", "1234", "port for plugin server")
 var server = rpc.NewServer()
+var logger = logging.GetLogger("plugin-core")
 
 // Register registers the given responder to be used as a plugin.
 // The plugin will be able to receive calls via RPC.
@@ -35,7 +36,7 @@ func Serve() {
 		log.Fatal("listen error:", e)
 	}
 
-	fmt.Println(ansi.Color(fmt.Sprintf("Started plugin on `%v`", address), "black+h"))
+	logger.Debugf("Started plugin on `%v`", address)
 
 	for {
 		conn, err := l.Accept()
