@@ -1,6 +1,7 @@
 language: go
 
-install: true
+install:
+  - go get -d github.com/tobscher/go_ne
 
 script:
   - scripts/tests
