@@ -1,5 +1,9 @@
 language: go
 
+before_install:
+  - mv HOME/gopath/src/github.com/Tobscher HOME/gopath/src/github.com/tobscher
+  - TRAVIS_BUILD_DIR=$HOME/gopath/src/github.com/tobscher/go_ne
+
 script:
   - scripts/tests
 
