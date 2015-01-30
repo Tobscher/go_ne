@@ -1,5 +1,7 @@
 # GoKiss (by team go_ne)
 
+[![Build Status](https://travis-ci.org/Tobscher/go_ne.svg?branch=configuration)](https://travis-ci.org/Tobscher/go_ne)
+
 ## Inspiration
 
 James runs a few hobby projects on a VM.  
