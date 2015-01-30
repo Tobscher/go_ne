@@ -1,5 +1,8 @@
 language: go
 
+install:
+  - cd kiss && go get
+
 script:
   - scripts/tests
 
