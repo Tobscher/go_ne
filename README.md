@@ -1,36 +1,20 @@
-# GoKiss (by team go_ne)
+# kiss
 
-## Inspiration
+## Description
 
-James runs a few hobby projects on a VM.  
-Tobias helps manage large-scale infrastructure for a multinational company.   
-
-We wanted to meet somewhere in the middle to create an easily set up, easy to use, highly configurable tool to help manage our infrastructures - small and large scale.  
-
-## Overview
-
-Kiss is a plugin-based automation tool which allows you to execute arbitrary tasks on a remote machine (or even locally). It is intended to make deployments easier.
+kiss is a plugin-based automation tool which allows you to execute arbitrary tasks on a remote machine (or even locally). It is intended to make deployments easier.
 
 You can interact with Kiss in three different ways:
-* Via a Command Line Interface  
-* Via a web interface  
-* Using webhooks or periodic triggers  
+* Via a command line interface
+* Via a web interface (work in progress)
 
 It is able to:
 * Remotely execute scripts via SSH
-* Locally execute scripts
-(tested on Ubuntu Linux)
+* Locally execute scripts (tested on Ubuntu Linux)
 
-The execution of your tasks is driven by a YAML file. Each task consists of a number of steps. Tasks can be executed against a list of server groups (e.g. run task `mysqldump` against all servers in group `db`).
-
-Having your deployment scripts in a local place gives you and your team a number of benefits:
-* Team members don't have to remember how certain tasks have to be executed
-* You can easily add additional tasks by modifying a single configuration file
-* The configuration can be in version control (tasks don't get lost)
+The execution of your tasks is driven by a YAML file (usually `.kiss.yml`). You can define global or host-specific tasks in your `.kiss.yml`. A remote host typically has a particular role (e.g. web, db, mail, etc.). Those roles can be expressed in your `.kiss.yml` to define a collection tasks.
 
 The plugin-based architecture allows you to control more complex deployment tasks.
-
-This project has been developed during [Gopher Gala 2015](http://gophergala.com/).
 
 ## The CLI
 
@@ -144,7 +128,7 @@ $ kiss -config=.kiss-staging.yml
 
 Defines the config file which includes the task definition. Default .kiss.yml
 
-## The Web Interface
+## The Web Interface (work in progress)
 
 ![The Web Interface](https://raw.githubusercontent.com/gophergala/go_ne/master/githubdocs/gokiss-web.jpg)
 
@@ -230,7 +214,7 @@ tasks:
       - command: supervisorctl stop example-app
 ```
 
-### Additional Daemon Configuration 
+### Additional Daemon Configuration
 
 The daemon also supports a 'triggers' block.
 
@@ -294,8 +278,8 @@ You can easily write your own plugin by using our plugin framework. Here is an e
 package main
 
 import (
-	"github.com/gophergala/go_ne/plugins/core"
-	"github.com/gophergala/go_ne/plugins/shared"
+	"github.com/tobscher/kiss/plugins/core"
+	"github.com/tobscher/kiss/plugins/shared"
 )
 
 type Command struct {
@@ -319,7 +303,7 @@ func main() {
 
 The example above defines a plugin which runs the `env` command on your server.
 
-Please refer to the [plugins directory](https://github.com/gophergala/go_ne/tree/master/plugins) for more examples.
+Please refer to the [plugins directory](https://github.com/tobscher/kiss/tree/master/plugins) for more examples.
 
 ## Limitations
 
@@ -335,15 +319,14 @@ Please refer to the [plugins directory](https://github.com/gophergala/go_ne/tree
 
 We hope you find this project useful. Please help us build upon it!
 
-1. Fork it ( https://github.com/gophergala/go_ne/fork )
+1. Fork it ( https://github.com/tobscher/kiss/fork )
 2. Create your feature branch (`git checkout -b my-new-feature`)
 3. Commit your changes (`git commit -am 'Add some feature'`)
 4. Push to the branch (`git push origin my-new-feature`)
 5. Create a new Pull Request
 
-
-![Goofy Gopher](https://raw.githubusercontent.com/gophergala/go_ne/master/githubdocs/gopher.jpg)
-
 ## License
+
+This project has been developed during [Gopher Gala 2015](http://gophergala.com/).
 
 MIT License. Copyright 2015 [James Rutherford](https://twitter.com/jtruk "Twitter - JTRUK") & [Tobias Haar](https://twitter.com/tobscher "Twitter - Tobscher").
