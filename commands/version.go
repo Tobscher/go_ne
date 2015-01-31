@@ -1,4 +1,4 @@
-package main
+package commands
 
 import (
 	"fmt"
@@ -7,7 +7,7 @@ import (
 )
 
 // NewVersionCommand creates a new command to output the current version
-func NewVersionCommand() *cobra.Command {
+func NewVersionCommand(name, version string) *cobra.Command {
 	command := &cobra.Command{
 		Use:   "version",
 		Short: fmt.Sprintf("Print the version number of %v", name),

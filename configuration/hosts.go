@@ -3,15 +3,16 @@ package configuration
 // Host is the definition of a host and its
 // specific tasks.
 type Host struct {
-	Host       string
-	User       string
-	Password   string
-	PrivateKey string `yaml:"private_key"`
-	Connection string
-	Sudo       bool
-	Port       int
-	Roles      []string
-	Tasks      TaskCollection
+	Host        string
+	Description string
+	User        string
+	Password    string
+	PrivateKey  string `yaml:"private_key"`
+	Connection  string
+	Sudo        bool
+	Port        int
+	Roles       []string
+	Tasks       TaskCollection
 }
 
 // HostCollection is a set of hosts.
