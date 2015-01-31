@@ -9,10 +9,14 @@ test: deps
 	go test ./...
 
 lint: deps
-	go get -u github.com/golang/lint/golint
+	command -v golint >/dev/null 2>&1 || { go get -u github.com/golang/lint/golint; }
+	
 	golint ./...
 
 vet: deps
+	@go tool vet 2>/dev/null ; if [ $$? -eq 3 ]; then \
+		go get golang.org/x/tools/cmd/vet; \
+	fi
 	go get golang.org/x/tools/cmd/vet
 	go vet ./...
 
