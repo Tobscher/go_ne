@@ -78,13 +78,15 @@ func runWithRunner(task *configuration.Task, host *configuration.Host) {
 
 	runner, err := core.NewRemoteRunner(host)
 	if err != nil {
-		log.Fatal(err)
+		logger.Fatal(err.Error())
+		os.Exit(1)
 	}
 
 	logger.Infof("Executing task `%v`", task.Task)
 	err = core.RunTask(runner, task)
 	if err != nil {
-		log.Fatal(err)
+		logger.Fatal(err.Error())
+		os.Exit(1)
 	} else {
 		logger.Info("Tasks completed successfully")
 	}
