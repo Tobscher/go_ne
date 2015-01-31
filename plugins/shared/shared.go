@@ -1,6 +1,6 @@
 package shared
 
-import "github.com/tobscher/go_ne/configuration"
+import "github.com/tobscher/kiss/configuration"
 
 // Args describes the args for the remote call.
 type Args struct {

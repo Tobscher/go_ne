@@ -3,7 +3,7 @@ package configuration
 import (
 	"io/ioutil"
 
-	"github.com/tobscher/go_ne/logging"
+	"github.com/tobscher/kiss/logging"
 	"gopkg.in/yaml.v2"
 )
 

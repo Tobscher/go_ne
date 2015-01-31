@@ -6,9 +6,9 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
-	"github.com/tobscher/go_ne/configuration"
-	"github.com/tobscher/go_ne/core"
-	"github.com/tobscher/go_ne/logging"
+	"github.com/tobscher/kiss/configuration"
+	"github.com/tobscher/kiss/core"
+	"github.com/tobscher/kiss/logging"
 )
 
 var (

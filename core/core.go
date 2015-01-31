@@ -1,6 +1,6 @@
 package core
 
-import "github.com/tobscher/go_ne/logging"
+import "github.com/tobscher/kiss/logging"
 
 var logger = logging.GetLogger("core")
 

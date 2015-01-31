@@ -11,8 +11,8 @@ import (
 
 	"golang.org/x/crypto/ssh"
 
-	"github.com/tobscher/go_ne/configuration"
-	"github.com/tobscher/go_ne/logging"
+	"github.com/tobscher/kiss/configuration"
+	"github.com/tobscher/kiss/logging"
 )
 
 // Remote describes a runner which runs task

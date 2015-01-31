@@ -8,8 +8,8 @@ import (
 	"net/rpc"
 	"net/rpc/jsonrpc"
 
-	"github.com/tobscher/go_ne/logging"
-	"github.com/tobscher/go_ne/plugins/shared"
+	"github.com/tobscher/kiss/logging"
+	"github.com/tobscher/kiss/plugins/shared"
 )
 
 var host = flag.String("host", "localhost", "host for plugin server")

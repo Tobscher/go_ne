@@ -3,8 +3,8 @@ package core
 import (
 	"os"
 
-	"github.com/tobscher/go_ne/configuration"
-	"github.com/tobscher/go_ne/plugins/shared"
+	"github.com/tobscher/kiss/configuration"
+	"github.com/tobscher/kiss/plugins/shared"
 )
 
 // Task is the interface which describes tasks

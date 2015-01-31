@@ -12,7 +12,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/tobscher/go_ne/plugins/shared"
+	"github.com/tobscher/kiss/plugins/shared"
 )
 
 const (

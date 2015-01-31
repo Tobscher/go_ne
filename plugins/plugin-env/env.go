@@ -1,8 +1,8 @@
 package main
 
 import (
-	"github.com/gophergala/go_ne/plugins/core"
-	"github.com/gophergala/go_ne/plugins/shared"
+	"github.com/tobscher/kiss/plugins/core"
+	"github.com/tobscher/kiss/plugins/shared"
 )
 
 type Command struct {

@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/spf13/cobra"
-	"github.com/tobscher/go_ne/configuration"
+	"github.com/tobscher/kiss/configuration"
 )
 
 // NewHostsCommand creates the hosts command.

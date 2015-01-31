@@ -1,6 +1,6 @@
 package main
 
-import "github.com/tobscher/go_ne/commands"
+import "github.com/tobscher/kiss/commands"
 
 func main() {
 	rootCmd := commands.NewRootCommand()

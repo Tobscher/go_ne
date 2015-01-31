@@ -2,10 +2,11 @@ package main
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 
-	"github.com/gophergala/go_ne/plugins/core"
-	"github.com/gophergala/go_ne/plugins/shared"
+	"github.com/tobscher/kiss/plugins/core"
+	"github.com/tobscher/kiss/plugins/shared"
 )
 
 type Command struct {
@@ -17,7 +18,7 @@ func (t *Command) Execute(args shared.Args, reply *shared.Response) error {
 	}
 
 	if count, ok := args.Options["count"]; ok {
-		c := count.(float64)
+		c, _ := strconv.ParseFloat(count, 64)
 		cmd = append(cmd, fmt.Sprintf("-c %v", c))
 	}
 
