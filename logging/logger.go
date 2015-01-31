@@ -59,6 +59,7 @@ var levelColors = []string{
 	"black+h",
 }
 
+// DefaultLogLevel is set to INFO.
 var DefaultLogLevel = INFO
 
 func (ll Level) String() string {
@@ -95,6 +96,7 @@ func (l *Logger) Trace(message string) {
 	l.logLevel(TRACE, message)
 }
 
+// Tracef logs formatted trace level messages.
 func (l *Logger) Tracef(message string, a ...interface{}) {
 	l.logLevelf(TRACE, message, a...)
 }
@@ -104,6 +106,7 @@ func (l *Logger) Debug(message string) {
 	l.logLevel(DEBUG, message)
 }
 
+// Debugf logs formatted debug level messages.
 func (l *Logger) Debugf(message string, a ...interface{}) {
 	l.logLevelf(DEBUG, message, a...)
 }
@@ -113,6 +116,7 @@ func (l *Logger) Info(message string) {
 	l.logLevel(INFO, message)
 }
 
+// Infof logs formatted info level messages.
 func (l *Logger) Infof(message string, a ...interface{}) {
 	l.logLevelf(INFO, message, a...)
 }
@@ -122,6 +126,7 @@ func (l *Logger) Warn(message string) {
 	l.logLevel(WARN, message)
 }
 
+// Warnf logs formatted warn level messages.
 func (l *Logger) Warnf(message string, a ...interface{}) {
 	l.logLevelf(WARN, message, a...)
 }
@@ -131,6 +136,7 @@ func (l *Logger) Error(message string) {
 	l.logLevel(ERROR, message)
 }
 
+// Errorf logs formatted error level messages.
 func (l *Logger) Errorf(message string, a ...interface{}) {
 	l.logLevelf(ERROR, message, a...)
 }
@@ -140,6 +146,7 @@ func (l *Logger) Fatal(message string) {
 	l.logLevel(FATAL, message)
 }
 
+// Fatalf logs formatted fatal level messages.
 func (l *Logger) Fatalf(message string, a ...interface{}) {
 	l.logLevelf(FATAL, message, a...)
 }
