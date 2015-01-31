@@ -1,7 +1,7 @@
 language: go
 
 script:
-  - scripts/tests
+  - make
 
 go:
   - 1.4
