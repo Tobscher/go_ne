@@ -8,13 +8,18 @@ import (
 	"strings"
 )
 
-const READ_BUFFER_SIZE = 1024
+// ReadBufferSize describes the buffer size to be used
+// when reading from stdout/stderr
+const ReadBufferSize = 1024
 
+// Local describes a local runner.
 type Local struct {
 	ChStdOut chan []byte
 	ChStdErr chan []byte
 }
 
+// NewLocalRunner creates a new runner which runs tasks
+// locally.
 func NewLocalRunner() (*Local, error) {
 	lr := Local{
 		ChStdOut: make(chan []byte),
@@ -24,6 +29,7 @@ func NewLocalRunner() (*Local, error) {
 	return &lr, nil
 }
 
+// Run executes the given task on the local machine.
 func (l *Local) Run(task Task) error {
 	log.Printf("Running task: %v %v\n", task.Name(), strings.Join(task.Args(), " "))
 
@@ -46,8 +52,8 @@ func (l *Local) Run(task Task) error {
 	}
 
 	// COULDDO: Might be slicker to spin up two async processes that communicate back
-	bufferStdOut := make([]byte, READ_BUFFER_SIZE)
-	bufferStdErr := make([]byte, READ_BUFFER_SIZE)
+	bufferStdOut := make([]byte, ReadBufferSize)
+	bufferStdErr := make([]byte, ReadBufferSize)
 	listeningOut := true
 	listeningErr := true
 	for {
@@ -90,10 +96,11 @@ func (l *Local) Run(task Task) error {
 	return nil
 }
 
+// Close closes any open connections
 func (l *Local) Close() {
-
 }
 
+// LogOutput logs the output received by the channel.
 func LogOutput(runner *Local) {
 	for {
 		select {
