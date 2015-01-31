@@ -9,9 +9,11 @@ test: deps
 	go test ./...
 
 lint: deps
+	go get -u github.com/golang/lint/golint
 	golint ./...
 
 vet: deps
+	go get golang.org/x/tools/cmd/vet
 	go vet ./...
 
 plugins: deps
