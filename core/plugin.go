@@ -3,7 +3,6 @@ package core
 import (
 	"errors"
 	"fmt"
-	"log"
 	"net"
 	"net/rpc"
 	"net/rpc/jsonrpc"
@@ -16,18 +15,23 @@ import (
 	"github.com/tobscher/go_ne/plugins/shared"
 )
 
+const (
+	pluginPrefix = "plugin"
+	maxAttempts  = 5 // to connect to plugin
+)
+
 // PluginCache stores loaded plugins
 type PluginCache struct {
 	sync.Mutex
 	cache map[string]*Plugin
 }
 
-var pluginPrefix = "plugin"
-var loadedPlugins = PluginCache{
-	cache: make(map[string]*Plugin),
-}
-var maxAttempts = 5
-var startPort = 8000
+var (
+	startPort     = 8000
+	loadedPlugins = PluginCache{
+		cache: make(map[string]*Plugin),
+	}
+)
 
 // Plugin stores information about the plugin and how to
 // connect to it.
@@ -170,7 +174,7 @@ func StopAllPlugins() {
 	for k, v := range loadedPlugins.cache {
 		logger.Debugf("Stopping plugin: %v", k)
 		if err := v.information.Cmd.Process.Kill(); err != nil {
-			log.Println(err)
+			logger.Warn(err.Error())
 		}
 	}
 
