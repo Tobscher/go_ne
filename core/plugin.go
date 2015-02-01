@@ -27,7 +27,7 @@ type PluginCache struct {
 }
 
 var (
-	startPort     = 8000
+	startPort     = 15000
 	loadedPlugins = PluginCache{
 		cache: make(map[string]*Plugin),
 	}
