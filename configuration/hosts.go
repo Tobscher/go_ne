@@ -29,3 +29,18 @@ func (h HostCollection) Get(name string) *Host {
 
 	return nil
 }
+
+// WithRole returns all hosts with the given role name.
+func (h HostCollection) WithRole(roleName string) HostCollection {
+	var hosts HostCollection
+
+	for _, host := range h {
+		for _, role := range host.Roles {
+			if role == roleName {
+				hosts = append(hosts, host)
+			}
+		}
+	}
+
+	return hosts
+}

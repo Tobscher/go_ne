@@ -119,3 +119,20 @@ func TestTasks(t *testing.T) {
 		t.Error("Expected command to be go version.")
 	}
 }
+
+func TestRoles(t *testing.T) {
+	config := Load("./fixtures/example.yml")
+
+	if len(config.Roles) != 4 {
+		t.Errorf("Expected 3 roles got %v.", len(config.Roles))
+	}
+
+	docker := config.Roles["docker"]
+	if !arrayIncludes(docker.With, "common") {
+		t.Error("Expected role docker to be based of common.")
+	}
+
+	if len(docker.Tasks) != 2 {
+		t.Errorf("Expected role docker to have 2 tasks got %v.", len(docker.Tasks))
+	}
+}

@@ -41,7 +41,7 @@ func Serve() {
 	for {
 		conn, err := l.Accept()
 		if err != nil {
-			log.Fatal(err)
+			logger.Fatal(err.Error())
 		}
 
 		go server.ServeCodec(jsonrpc.NewServerCodec(conn))

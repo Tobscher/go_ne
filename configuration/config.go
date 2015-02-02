@@ -15,6 +15,7 @@ type Configuration struct {
 	Vars  map[string]string
 	Hosts HostCollection
 	Tasks TaskCollection
+	Roles RoleCollection
 }
 
 // Load loads configuration from the given path.

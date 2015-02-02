@@ -19,6 +19,28 @@ hosts:
         shell:
           command: echo "Foo"
 
+# Role specific tasks
+roles:
+  common:
+    tasks:
+      - task: Common task
+        shell:
+          command: whoami
+  docker:
+    with: [common]
+    tasks:
+      - task: install docker
+        description: Install docker
+        apt-get:
+          update: yes
+          packages: [docker.io]
+  db:
+    with: [common]
+    tasks:
+      - task: Install MySQL
+        apt-get:
+          update: yes
+          packages: [mysql-server]
 
 # Global tasks
 tasks:

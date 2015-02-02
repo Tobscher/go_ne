@@ -29,6 +29,39 @@ hosts:
       - docker
       - db
 
+# Role specific tasks
+roles:
+  common:
+    tasks:
+      - task: Common task
+        shell:
+          command: whoami
+  docker:
+    with: [common]
+    tasks:
+      - task: install_docker
+        description: Install docker
+        apt-get:
+          update: yes
+          packages: [docker.io]
+      - task: run_docker
+        description: run docker daemon
+        shell:
+          command: docker -d &
+  db:
+    with: [common]
+    tasks:
+      - task: Install MySQL
+        apt-get:
+          update: yes
+          packages: [mysql-server]
+  web:
+    with: [common]
+    tasks:
+      - task: Install ruby
+        shell:
+          command: echo "Install ruby..."
+
 # Global tasks
 tasks:
   - task: Environment

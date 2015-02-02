@@ -11,11 +11,6 @@ import (
 	"github.com/tobscher/kiss/logging"
 )
 
-var (
-	configFile string
-	verbose    bool
-)
-
 // NewRunCommand creates a new command to run a task.
 func NewRunCommand() *cobra.Command {
 	command := &cobra.Command{
