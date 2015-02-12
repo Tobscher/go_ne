@@ -2,7 +2,7 @@ package configuration
 
 // OptionCollection is a map from option name
 // to option value
-type OptionCollection map[string]string
+type OptionCollection map[string]interface{}
 
 // Plugin has information about the plugin and
 // its options.

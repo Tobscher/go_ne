@@ -41,7 +41,7 @@ roles:
     tasks:
       - task: install_docker
         description: Install docker
-        apt-get:
+        apt:
           update: yes
           packages: [docker.io]
       - task: run_docker
@@ -52,9 +52,10 @@ roles:
     with: [common]
     tasks:
       - task: Install MySQL
-        apt-get:
+        apt:
           update: yes
-          packages: [mysql-server]
+          packages:
+            - "mysql-server"
   web:
     with: [common]
     tasks:

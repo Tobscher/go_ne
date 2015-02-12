@@ -26,6 +26,18 @@ func ExtractBool(p interface{}) bool {
 	return p.(bool)
 }
 
+// ExtractTruthy converts the given string to a boolean.
+func ExtractTruthy(p interface{}) bool {
+	switch t := p.(type) {
+	case string:
+		return t == "true" || t == "yes"
+	case bool:
+		return t
+	}
+
+	return false
+}
+
 // ExtractString converts the given interface to a string.
 func ExtractString(p interface{}) string {
 	return p.(string)

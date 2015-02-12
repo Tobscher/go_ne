@@ -9,7 +9,7 @@ func NewCommand() *Command {
 }
 
 func (t *Command) Execute(args shared.Args, reply *shared.Response) error {
-	command := args.Options["command"]
+	command := shared.ExtractString(args.Options["command"])
 	*reply = shared.NewResponse(shared.NewCommand("sh -c -e", command))
 
 	return nil

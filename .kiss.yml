@@ -7,7 +7,6 @@ vars:
 hosts:
   - host: localhost
     description: "Foo"
-    sudo: true
     user: vagrant
     password: vagrant
     port: 2222
@@ -34,17 +33,19 @@ roles:
     tasks:
       - task: install docker
         description: Install docker
-        apt-get:
+        apt:
           update: yes
-          packages: [docker.io]
+          packages:
+            - docker.io
   db:
     description: "DB role"
     with: [common]
     tasks:
       - task: Install MySQL
-        apt-get:
+        apt:
           update: yes
-          packages: [mysql-server]
+          packages:
+            - mysql-server
 
 # Global tasks
 tasks:
