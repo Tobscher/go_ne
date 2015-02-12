@@ -6,6 +6,7 @@ vars:
 # Hosts
 hosts:
   - host: localhost
+    description: "Foo"
     sudo: true
     user: vagrant
     password: vagrant
@@ -22,11 +23,13 @@ hosts:
 # Role specific tasks
 roles:
   common:
+    description: "Common"
     tasks:
       - task: Common task
         shell:
           command: whoami
   docker:
+    description: "Docker base role"
     with: [common]
     tasks:
       - task: install docker
@@ -35,6 +38,7 @@ roles:
           update: yes
           packages: [docker.io]
   db:
+    description: "DB role"
     with: [common]
     tasks:
       - task: Install MySQL

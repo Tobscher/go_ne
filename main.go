@@ -9,6 +9,7 @@ func main() {
 	rootCmd.AddCommand(commands.NewRunRoleCommand())
 	rootCmd.AddCommand(commands.NewTasksCommand())
 	rootCmd.AddCommand(commands.NewHostsCommand())
+	rootCmd.AddCommand(commands.NewRolesCommand())
 
 	rootCmd.Execute()
 }
