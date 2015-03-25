@@ -8,7 +8,7 @@ hosts:
   - host: localhost
     description: "Foo"
     user: vagrant
-    password: vagrant
+    private_key: .vagrant/machines/default/virtualbox/private_key
     port: 2222
     roles:
       - docker
