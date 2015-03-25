@@ -1,8 +1,15 @@
 package main
 
-import "github.com/tobscher/kiss/commands"
+import (
+	"math/rand"
+	"time"
+
+	"github.com/tobscher/kiss/commands"
+)
 
 func main() {
+	rand.Seed(time.Now().UTC().UnixNano())
+
 	rootCmd := commands.NewRootCommand()
 	rootCmd.AddCommand(commands.NewVersionCommand(name, version))
 	rootCmd.AddCommand(commands.NewRunCommand())
