@@ -77,6 +77,11 @@ func runWithRunner(task *configuration.Task, host *configuration.Host) {
 		os.Exit(1)
 	}
 
+	if err = runner.Prepare(); err != nil {
+		logger.Fatal(err.Error())
+		os.Exit(1)
+	}
+
 	logger.Infof("Executing task `%v`", task.Task)
 	err = core.RunTask(runner, task)
 	if err != nil {

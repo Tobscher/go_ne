@@ -1,8 +1,17 @@
 package main
 
-import "github.com/tobscher/kiss/plugins/core"
+import (
+	"os"
+
+	"github.com/tobscher/kiss/plugins/core"
+)
 
 func main() {
-	plugin.Register(NewCommand())
-	plugin.Serve()
+	var options Options
+	plugin.LoadConfig(os.Stdin, &options)
+
+	apt := NewApt(options)
+	result := apt.Run()
+
+	os.Exit(result)
 }

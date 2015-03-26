@@ -14,10 +14,10 @@ hosts:
       - docker
       - db
     tasks:
-      - task: echo
-        description: echo Foo
+      - task: test
+        description: Creates a temporary file
         shell:
-          command: echo "Foo"
+          command: touch /tmp/kiss.tmp
 
 # Role specific tasks
 roles:

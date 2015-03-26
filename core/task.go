@@ -1,49 +1,12 @@
 package core
 
-import (
-	"os"
-
-	"github.com/tobscher/kiss/configuration"
-	"github.com/tobscher/kiss/plugins/shared"
-)
-
-// Task is the interface which describes tasks
-// that should be run on the remote system.
-type Task interface {
-	Name() string
-	Args() []string
-}
+import "github.com/tobscher/kiss/configuration"
 
 // RunTask uses the given runner to execute a task.
 func RunTask(runner Runner, t *configuration.Task) error {
-	defer StopAllPlugins()
 	defer runner.Close()
-	var commands []*Command
 
-	for name, plugin := range t.Plugin {
-		// Load plugin
-		p, err := GetPlugin(name)
-		if err != nil {
-			return err
-		}
-
-		pluginArgs := shared.Args{
-			Environment: os.Environ(),
-			Options:     plugin.Options,
-		}
-
-		commands, err = p.GetCommands(pluginArgs)
-		if err != nil {
-			return err
-		}
-
-		for _, c := range commands {
-			err = runner.Run(c)
-			if err != nil {
-				return err
-			}
-		}
-	}
+	runner.Run(t)
 
 	return nil
 }

@@ -1,5 +1,9 @@
 package configuration
 
+import (
+	"encoding/json"
+)
+
 // OptionCollection is a map from option name
 // to option value
 type OptionCollection map[string]interface{}
@@ -31,4 +35,13 @@ func (t TaskCollection) Get(name string) *Task {
 	}
 
 	return nil
+}
+
+func (t *Task) JSON() string {
+	bytes, err := json.Marshal(t)
+	if err != nil {
+		logger.Fatal(err.Error())
+	}
+
+	return string(bytes)
 }

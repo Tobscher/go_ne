@@ -1,53 +1,64 @@
 package plugin
 
 import (
-	"flag"
-	"fmt"
+	"bufio"
+	"encoding/json"
+	"io"
 	"log"
-	"net"
-	"net/rpc"
-	"net/rpc/jsonrpc"
-
-	"github.com/tobscher/kiss/logging"
-	"github.com/tobscher/kiss/plugins/shared"
+	"os/exec"
+	"strings"
 )
 
-var host = flag.String("host", "localhost", "host for plugin server")
-var port = flag.String("port", "1234", "port for plugin server")
-var server = rpc.NewServer()
-var logger = logging.GetLogger("plugin-core")
+func RunCommandRegular(name string, arg ...string) error {
+	commands := strings.Split(name, " ")
+	command := commands[0]
+	arguments := append([]string{}, commands[1:]...)
+	cmd := exec.Command(command, arguments...)
 
-// Register registers the given responder to be used as a plugin.
-// The plugin will be able to receive calls via RPC.
-// Please make sure your struct is called `Command` as the remote call is `Command.Execute`
-func Register(r shared.Responder) {
-	server.Register(r)
-}
+	log.Println(commands)
+	log.Println(arguments)
 
-// Serve Starts the server and listens to it.
-func Serve() {
-	flag.Parse()
-
-	address := getAddress()
-
-	server.HandleHTTP(rpc.DefaultRPCPath, rpc.DefaultDebugPath)
-	l, e := net.Listen("tcp", address)
-	if e != nil {
-		log.Fatal("listen error:", e)
+	// only if verbose
+	// cmd.Stdout = os.Stdout
+	// cmd.Stderr = os.Stderr
+	if err := cmd.Start(); err != nil {
+		return err
 	}
 
-	logger.Debugf("Started plugin on `%v`", address)
+	log.Println("Command started")
 
-	for {
-		conn, err := l.Accept()
-		if err != nil {
-			logger.Fatal(err.Error())
-		}
-
-		go server.ServeCodec(jsonrpc.NewServerCodec(conn))
+	if err := cmd.Wait(); err != nil {
+		return err
 	}
+
+	return nil
 }
 
-func getAddress() string {
-	return fmt.Sprintf("%v:%v", *host, *port)
+func RunCommandAsSudo(name string, arg ...string) error {
+	args := append([]string{name}, arg...)
+	return RunCommandRegular("sudo", args...)
+}
+
+func RunCommand(sudo bool, name string, arg ...string) error {
+	if sudo {
+		return RunCommandAsSudo(name, arg...)
+	}
+	return RunCommandRegular(name, arg...)
+}
+
+func LoadConfig(reader io.Reader, v interface{}) {
+	log.Println("Loading config")
+
+	bio := bufio.NewReader(reader)
+	bytes, _, err := bio.ReadLine()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	log.Printf("%+v\n", string(bytes))
+
+	err = json.Unmarshal(bytes, v)
+	if err != nil {
+		log.Fatal(err)
+	}
 }

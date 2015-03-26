@@ -3,11 +3,12 @@ package core
 import (
 	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
 	"os"
 	"strconv"
-	"strings"
+	"time"
 
 	"golang.org/x/crypto/ssh"
 
@@ -19,6 +20,8 @@ import (
 // on a remote system via SSH.
 type Remote struct {
 	Client *ssh.Client
+
+	tempDir string
 }
 
 // NewRemoteRunner creates a new runner which runs
@@ -36,37 +39,72 @@ func NewRemoteRunner(host *configuration.Host) (*Remote, error) {
 	}, nil
 }
 
-// Run runs the given task on the remote system
-func (r *Remote) Run(task Task) error {
+func (r *Remote) runCommand(cmd string) error {
 	session, err := r.Client.NewSession()
 	if err != nil {
 		return errors.New("Failed to create session: " + err.Error())
 	}
 	defer session.Close()
 
-	args := ""
-	if len(task.Args()) > 0 {
-		args = strings.Join(task.Args(), " ")
+	logger.Debugf("Executing `%v`", cmd)
+	if err := session.Start(cmd); err != nil {
+		return err
 	}
 
-	logger.Debugf("Executing `%v %v`", task.Name(), args)
+	if err = session.Wait(); err != nil {
+		return err
+	}
 
-	cmd := fmt.Sprintf("%v %v", task.Name(), strings.Join(task.Args(), " "))
+	return nil
+}
+
+func (r *Remote) Prepare() error {
+	logger.Debug("Preparing remote machine")
+
+	t := time.Now().Local()
+	r.tempDir = fmt.Sprintf("/tmp/kiss/%v", t.Format("20060102150405"))
+	cmd := fmt.Sprintf("mkdir -p %v", r.tempDir)
+	return r.runCommand(cmd)
+}
+
+// Run runs the given task on the remote system
+func (r *Remote) Run(t *configuration.Task) error {
+	session, err := r.Client.NewSession()
+	if err != nil {
+		return errors.New("Failed to create session: " + err.Error())
+	}
+	defer session.Close()
+
+	cmd := "/tmp/kiss/agent"
 
 	if logger.Level > logging.INFO {
 		session.Stdout = os.Stdout
 		session.Stderr = os.Stderr
 	}
 
+	stdin, err := session.StdinPipe()
 	if err := session.Start(cmd); err != nil {
 		return err
 	}
+
+	if err != nil {
+		logger.Fatal(err.Error())
+	}
+
+	io.WriteString(stdin, t.JSON())
+	io.WriteString(stdin, "\n")
 
 	return session.Wait()
 }
 
 // Close closes the SSH connection to the remote system
 func (r *Remote) Close() {
+	logger.Debug("Tearing down remote machine")
+
+	cmd := fmt.Sprintf("rm -rf %v", r.tempDir)
+
+	r.runCommand(cmd)
+
 	r.Client.Close()
 }
 
