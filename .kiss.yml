@@ -11,13 +11,12 @@ hosts:
     private_key: .vagrant/machines/default/virtualbox/private_key
     port: 2222
     roles:
-      - docker
       - db
     tasks:
       - task: test
         description: Creates a temporary file
         shell:
-          command: touch /tmp/kiss.tmp
+          command: rm /tmp/kiss.ftw
 
 # Role specific tasks
 roles:
@@ -27,23 +26,14 @@ roles:
       - task: Common task
         shell:
           command: whoami
-  docker:
-    description: "Docker base role"
-    with: [common]
-    tasks:
-      - task: install docker
-        description: Install docker
-        apt:
-          update: yes
-          packages:
-            - docker.io
   db:
     description: "DB role"
     with: [common]
     tasks:
       - task: Install MySQL
         apt:
-          update: yes
+          update: true
+          sudo: true
           packages:
             - mysql-server
 

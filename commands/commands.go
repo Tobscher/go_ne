@@ -6,4 +6,5 @@ var (
 	logger     = logging.GetLogger("kiss")
 	configFile string
 	verbose    bool
+	trace      bool
 )

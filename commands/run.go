@@ -21,6 +21,7 @@ func NewRunCommand() *cobra.Command {
 	}
 	command.Flags().StringVar(&configFile, "config", ".kiss.yml", "path to config file")
 	command.Flags().BoolVarP(&verbose, "verbose", "v", false, "verbose output")
+	command.Flags().BoolVar(&trace, "trace", false, "trace output")
 
 	return command
 }
@@ -29,6 +30,11 @@ func runRun(cmd *cobra.Command, args []string) {
 	if verbose {
 		logger.SetLevel(logging.DEBUG)
 		core.SetLogLevel(logging.DEBUG)
+	}
+
+	if trace {
+		logger.SetLevel(logging.TRACE)
+		core.SetLogLevel(logging.TRACE)
 	}
 
 	config := configuration.Load(configFile)

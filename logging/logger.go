@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/mgutz/ansi"
@@ -159,7 +160,7 @@ func (l *Logger) logLevelWithLineEnding(level Level, message string, newLine str
 	time := time.Now()
 	formattedTime := time.Format("2006-01-02 15:04:05")
 
-	formatted := ansi.Color(fmt.Sprintf("%v [%v] - %v - %v", formattedTime, level.String()[0:4], l.Module, message), levelColors[level])
+	formatted := ansi.Color(fmt.Sprintf("%v [%v] - %v - %v", formattedTime, level.String()[0:4], l.Module, strings.TrimSuffix(message, "\n")), levelColors[level])
 	formatted = fmt.Sprintf("%v%v", formatted, newLine)
 	l.Print(formatted)
 }

@@ -6,7 +6,5 @@ import "github.com/tobscher/kiss/configuration"
 func RunTask(runner Runner, t *configuration.Task) error {
 	defer runner.Close()
 
-	runner.Run(t)
-
-	return nil
+	return runner.Run(t)
 }

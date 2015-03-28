@@ -1,7 +1,8 @@
 package main
 
 import (
-	"log"
+	"fmt"
+	"os"
 
 	"github.com/tobscher/kiss/plugins/core"
 )
@@ -21,7 +22,8 @@ func NewShell(options Options) *Shell {
 func (s *Shell) Run() int {
 	err := plugin.RunCommand(s.options.Sudo, s.options.Command, s.options.Args...)
 	if err != nil {
-		log.Fatal(err)
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
 	}
 
 	return 0

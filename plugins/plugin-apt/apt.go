@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 
 	"github.com/tobscher/kiss/plugins/core"
@@ -20,7 +21,7 @@ func NewApt(options Options) *Apt {
 
 func (a *Apt) Run() int {
 	if a.options.Update {
-		log.Println("-- Updating cache...")
+		fmt.Println("-- Updating cache...")
 		if err := updateCache(a.options.Sudo); err != nil {
 			log.Println(err)
 			return 1
@@ -28,7 +29,7 @@ func (a *Apt) Run() int {
 	}
 
 	if len(a.options.Packages) > 0 {
-		log.Println("-- Installing packages...")
+		fmt.Println("-- Installing packages...")
 		if err := installPackages(a.options.Sudo, a.options.Packages); err != nil {
 			log.Println(err)
 			return 1
@@ -39,10 +40,10 @@ func (a *Apt) Run() int {
 }
 
 func updateCache(sudo bool) error {
-	return plugin.RunCommand(sudo, "apt-get", "update -qq")
+	return plugin.RunCommand(sudo, "apt-get", "update", "-qq")
 }
 
 func installPackages(sudo bool, packages []string) error {
-	args := append([]string{"install -y"}, packages...)
+	args := append([]string{"install", "-y"}, packages...)
 	return plugin.RunCommand(sudo, "apt-get", args...)
 }

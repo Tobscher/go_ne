@@ -47,8 +47,6 @@ func runRoleRun(cmd *cobra.Command, args []string) {
 
 	logger.Infof("Running role `%v`", roleName)
 	for _, host := range config.Hosts.WithRole(roleName) {
-		logger.Infof("Selecting host `%v`", host.Host)
-
 		for _, task := range role.Tasks {
 			runWithRunner(&task, &host)
 		}

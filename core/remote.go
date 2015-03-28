@@ -1,15 +1,16 @@
 package core
 
 import (
+	"bufio"
 	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
-	"os"
 	"strconv"
 	"time"
 
+	"github.com/pkg/sftp"
 	"golang.org/x/crypto/ssh"
 
 	"github.com/tobscher/kiss/configuration"
@@ -19,7 +20,8 @@ import (
 // Remote describes a runner which runs task
 // on a remote system via SSH.
 type Remote struct {
-	Client *ssh.Client
+	Client     *ssh.Client
+	SftpClient *sftp.Client
 
 	tempDir string
 }
@@ -34,8 +36,14 @@ func NewRemoteRunner(host *configuration.Host) (*Remote, error) {
 		return nil, err
 	}
 
+	fileClient, err := createFileClient(client)
+	if err != nil {
+		return nil, err
+	}
+
 	return &Remote{
-		Client: client,
+		Client:     client,
+		SftpClient: fileClient,
 	}, nil
 }
 
@@ -58,13 +66,49 @@ func (r *Remote) runCommand(cmd string) error {
 	return nil
 }
 
+func (r *Remote) uploadFile(from string, to string) error {
+	logger.Tracef("Uploading file from `%v` to `%v`\n", from, to)
+
+	return nil
+}
+
+func (r *Remote) makeDirectory(path string) error {
+	logger.Tracef("Creating directory `%v`\n", path)
+	err := r.SftpClient.Mkdir(path)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (r *Remote) remove(path string) error {
+	logger.Tracef("Removing file/directory `%v`\n", path)
+	err := r.SftpClient.Remove(path)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (r *Remote) fileExists(path string) bool {
+	logger.Tracef("Checking if file exists `%v`\n", path)
+
+	_, err := r.SftpClient.Lstat(path)
+	if err != nil {
+		return false
+	}
+
+	return true
+}
+
 func (r *Remote) Prepare() error {
 	logger.Debug("Preparing remote machine")
 
 	t := time.Now().Local()
 	r.tempDir = fmt.Sprintf("/tmp/kiss/%v", t.Format("20060102150405"))
-	cmd := fmt.Sprintf("mkdir -p %v", r.tempDir)
-	return r.runCommand(cmd)
+	return r.makeDirectory(r.tempDir)
 }
 
 // Run runs the given task on the remote system
@@ -75,11 +119,29 @@ func (r *Remote) Run(t *configuration.Task) error {
 	}
 	defer session.Close()
 
-	cmd := "/tmp/kiss/agent"
+	cmd := "kiss-agent"
 
 	if logger.Level > logging.INFO {
-		session.Stdout = os.Stdout
-		session.Stderr = os.Stderr
+		stdout, err := session.StdoutPipe()
+		if err != nil {
+			return err
+		}
+
+		go func() {
+			scanner := bufio.NewScanner(stdout)
+			for scanner.Scan() {
+				logger.Debug(scanner.Text())
+			}
+
+			if err := scanner.Err(); err != nil {
+				logger.Fatal(err.Error())
+			}
+		}()
+	}
+
+	stdErr, err := session.StderrPipe()
+	if err != nil {
+		return err
 	}
 
 	stdin, err := session.StdinPipe()
@@ -94,17 +156,25 @@ func (r *Remote) Run(t *configuration.Task) error {
 	io.WriteString(stdin, t.JSON())
 	io.WriteString(stdin, "\n")
 
-	return session.Wait()
+	err = session.Wait()
+	if err != nil {
+		bytes, bufErr := ioutil.ReadAll(stdErr)
+		if bufErr != nil {
+			return bufErr
+		}
+
+		return fmt.Errorf("%v: %v", err, string(bytes))
+	}
+
+	return nil
 }
 
 // Close closes the SSH connection to the remote system
 func (r *Remote) Close() {
 	logger.Debug("Tearing down remote machine")
 
-	cmd := fmt.Sprintf("rm -rf %v", r.tempDir)
-
-	r.runCommand(cmd)
-
+	r.remove(r.tempDir)
+	r.SftpClient.Close()
 	r.Client.Close()
 }
 
@@ -147,6 +217,15 @@ func createClient(username, password, host, port, key string) (*ssh.Client, erro
 	}
 
 	return client, nil
+}
+
+func createFileClient(client *ssh.Client) (*sftp.Client, error) {
+	sftp, err := sftp.NewClient(client)
+	if err != nil {
+		return nil, err
+	}
+
+	return sftp, nil
 }
 
 func loadKey(file string) (interface{}, error) {
