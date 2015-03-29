@@ -20,6 +20,7 @@ func NewRunRoleCommand() *cobra.Command {
 	}
 	command.Flags().StringVar(&configFile, "config", ".kiss.yml", "path to config file")
 	command.Flags().BoolVarP(&verbose, "verbose", "v", false, "verbose output")
+	command.Flags().BoolVar(&trace, "trace", false, "trace output")
 
 	return command
 }
@@ -28,6 +29,11 @@ func runRoleRun(cmd *cobra.Command, args []string) {
 	if verbose {
 		logger.SetLevel(logging.DEBUG)
 		core.SetLogLevel(logging.DEBUG)
+	}
+
+	if trace {
+		logger.SetLevel(logging.TRACE)
+		core.SetLogLevel(logging.TRACE)
 	}
 
 	config := configuration.Load(configFile)
@@ -47,8 +53,9 @@ func runRoleRun(cmd *cobra.Command, args []string) {
 
 	logger.Infof("Running role `%v`", roleName)
 	for _, host := range config.Hosts.WithRole(roleName) {
-		for _, task := range role.Tasks {
-			runWithRunner(&task, &host)
-		}
+		runWithRunner(role.Tasks, &host)
 	}
+
+	logger.Info("Tasks completed successfully")
+	os.Exit(0)
 }

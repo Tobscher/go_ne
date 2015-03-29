@@ -11,6 +11,7 @@ hosts:
     private_key: .vagrant/machines/default/virtualbox/private_key
     port: 2222
     roles:
+      - docker
       - db
     tasks:
       - task: test
@@ -26,6 +27,28 @@ roles:
       - task: Common task
         shell:
           command: whoami
+  docker:
+    tasks:
+      - task: Upgrade kernel
+        apt:
+          sudo: true
+          update: true
+          packages:
+            - linux-image-generic-lts-trusty
+      - task: Reboot system
+        shell:
+          sudo: true
+          command: shutdown -r now "triggered by kiss"
+        wait_after: 15
+      - task: Install wget
+        apt:
+          sudo: true
+          update: true
+          packages:
+            - wget
+      - task: Download and install docker
+        shell:
+          command: wget -qO- https://get.docker.com/ | sh
   db:
     description: "DB role"
     with: [common]

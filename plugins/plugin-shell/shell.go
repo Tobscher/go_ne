@@ -20,7 +20,7 @@ func NewShell(options Options) *Shell {
 }
 
 func (s *Shell) Run() int {
-	err := plugin.RunCommand(s.options.Sudo, s.options.Command, s.options.Args...)
+	err := plugin.RunCommand(s.options.Command, s.options.Sudo)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)

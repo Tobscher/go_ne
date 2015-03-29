@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"log"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/pkg/sftp"
@@ -20,6 +21,7 @@ import (
 // Remote describes a runner which runs task
 // on a remote system via SSH.
 type Remote struct {
+	Host       *configuration.Host
 	Client     *ssh.Client
 	SftpClient *sftp.Client
 
@@ -28,23 +30,28 @@ type Remote struct {
 
 // NewRemoteRunner creates a new runner which runs
 // tasks on a remote system.
-//
-// An SSH connection will be establishe.
-func NewRemoteRunner(host *configuration.Host) (*Remote, error) {
-	client, err := createClient(host.User, host.Password, host.Host, strconv.Itoa(host.Port), host.PrivateKey)
+func NewRemoteRunner(host *configuration.Host) *Remote {
+	return &Remote{
+		Host: host,
+	}
+}
+
+// An SSH connection will be established.
+func (r *Remote) Connect() error {
+	client, err := createClient(r.Host.User, r.Host.Password, r.Host.Host, strconv.Itoa(r.Host.Port), r.Host.PrivateKey)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	fileClient, err := createFileClient(client)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	return &Remote{
-		Client:     client,
-		SftpClient: fileClient,
-	}, nil
+	r.Client = client
+	r.SftpClient = fileClient
+
+	return nil
 }
 
 func (r *Remote) runCommand(cmd string) error {
@@ -82,11 +89,13 @@ func (r *Remote) makeDirectory(path string) error {
 	return nil
 }
 
-func (r *Remote) remove(path string) error {
+func (r *Remote) remove(path string, checkError bool) error {
 	logger.Tracef("Removing file/directory `%v`\n", path)
 	err := r.SftpClient.Remove(path)
 	if err != nil {
-		return err
+		if checkError {
+			return err
+		}
 	}
 
 	return nil
@@ -103,28 +112,71 @@ func (r *Remote) fileExists(path string) bool {
 	return true
 }
 
+// Run runs the given task on the remote system
+func (r *Remote) Run(t *configuration.Task) error {
+	if err := r.Prepare(); err != nil {
+		return err
+	}
+
+	if t.WaitBefore > 0 {
+		logger.Infof("Waiting for %v seconds\n", t.WaitBefore)
+		time.Sleep(time.Duration(t.WaitBefore) * time.Second)
+	}
+
+	if err := r.Execute(t); err != nil {
+		return err
+	}
+
+	if t.WaitAfter > 0 {
+		logger.Infof("Waiting for %v seconds\n", t.WaitAfter)
+		time.Sleep(time.Duration(t.WaitAfter) * time.Second)
+	}
+
+	if err := r.CleanUp(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (r *Remote) Prepare() error {
 	logger.Debug("Preparing remote machine")
 
+	r.Connect()
+	defer r.Close()
+	r.makeDirectory("/tmp/kiss")
+
 	t := time.Now().Local()
 	r.tempDir = fmt.Sprintf("/tmp/kiss/%v", t.Format("20060102150405"))
-	return r.makeDirectory(r.tempDir)
+	if err := r.makeDirectory(r.tempDir); err != nil {
+		return err
+	}
+
+	return nil
 }
 
-// Run runs the given task on the remote system
-func (r *Remote) Run(t *configuration.Task) error {
+func (r *Remote) Execute(t *configuration.Task) error {
+	logger.Debug("Executing task...")
+
+	r.Connect()
+	defer r.Close()
+
 	session, err := r.Client.NewSession()
 	if err != nil {
 		return errors.New("Failed to create session: " + err.Error())
 	}
-	defer session.Close()
 
-	cmd := "kiss-agent"
+	commands := []string{
+		"env",
+		fmt.Sprintf("KISS_TMP_DIR=%v", r.tempDir),
+		"kiss-agent",
+	}
+	cmd := strings.Join(commands, " ")
 
 	if logger.Level > logging.INFO {
 		stdout, err := session.StdoutPipe()
 		if err != nil {
-			return err
+			return fmt.Errorf("Error while getting stdout pipe: %v", err)
 		}
 
 		go func() {
@@ -134,7 +186,7 @@ func (r *Remote) Run(t *configuration.Task) error {
 			}
 
 			if err := scanner.Err(); err != nil {
-				logger.Fatal(err.Error())
+				logger.Fatal(fmt.Sprintf("Error while reading from stdout: %v", err))
 			}
 		}()
 	}
@@ -145,12 +197,12 @@ func (r *Remote) Run(t *configuration.Task) error {
 	}
 
 	stdin, err := session.StdinPipe()
-	if err := session.Start(cmd); err != nil {
-		return err
-	}
-
 	if err != nil {
 		logger.Fatal(err.Error())
+	}
+
+	if err := session.Start(cmd); err != nil {
+		return err
 	}
 
 	io.WriteString(stdin, t.JSON())
@@ -160,7 +212,7 @@ func (r *Remote) Run(t *configuration.Task) error {
 	if err != nil {
 		bytes, bufErr := ioutil.ReadAll(stdErr)
 		if bufErr != nil {
-			return bufErr
+			return fmt.Errorf("Error reading from stderr: %v", bufErr)
 		}
 
 		return fmt.Errorf("%v: %v", err, string(bytes))
@@ -171,11 +223,17 @@ func (r *Remote) Run(t *configuration.Task) error {
 
 // Close closes the SSH connection to the remote system
 func (r *Remote) Close() {
-	logger.Debug("Tearing down remote machine")
-
-	r.remove(r.tempDir)
+	logger.Debug("Closing connection to remote machine")
 	r.SftpClient.Close()
 	r.Client.Close()
+}
+
+func (r *Remote) CleanUp() error {
+	logger.Debug("Cleaning up remote machine")
+	r.Connect()
+	defer r.Close()
+
+	return r.remove(r.tempDir, false)
 }
 
 func createClient(username, password, host, port, key string) (*ssh.Client, error) {
@@ -210,7 +268,7 @@ func createClient(username, password, host, port, key string) (*ssh.Client, erro
 
 	remoteServer := fmt.Sprintf("%v:%v", host, port)
 
-	logger.Infof("Connecting to %v@%v", username, remoteServer)
+	logger.Debugf("Connecting to %v@%v", username, remoteServer)
 	client, err := ssh.Dial("tcp", remoteServer, config)
 	if err != nil {
 		return nil, err

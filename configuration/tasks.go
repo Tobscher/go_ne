@@ -1,8 +1,6 @@
 package configuration
 
-import (
-	"encoding/json"
-)
+import "encoding/json"
 
 // OptionCollection is a map from option name
 // to option value
@@ -19,6 +17,8 @@ type Plugin struct {
 type Task struct {
 	Task        string
 	Description string
+	WaitBefore  int               `yaml:"wait_before"`
+	WaitAfter   int               `yaml:"wait_after"`
 	Plugin      map[string]Plugin `yaml:",inline"`
 }
 
@@ -35,6 +35,14 @@ func (t TaskCollection) Get(name string) *Task {
 	}
 
 	return nil
+}
+
+func NewTaskCollection(tasks ...Task) TaskCollection {
+	var result TaskCollection
+
+	result = append(result, tasks...)
+
+	return result
 }
 
 func (t *Task) JSON() string {

@@ -8,4 +8,5 @@ type Runner interface {
 	Prepare() error
 	Run(*configuration.Task) error
 	Close()
+	CleanUp() error
 }

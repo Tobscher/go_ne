@@ -60,41 +60,40 @@ func runRun(cmd *cobra.Command, args []string) {
 			log.Fatalf("Host not found: %v\n", hostName)
 		}
 
-		runWithRunner(task, host)
+		runWithRunner(configuration.NewTaskCollection(*task), host)
+		logger.Info("Tasks completed successfully")
+		os.Exit(0)
 	} else {
 		for _, host := range config.Hosts {
 			task := host.Tasks.Get(taskName)
 			if task != nil {
-				runWithRunner(task, &host)
+				runWithRunner(configuration.NewTaskCollection(*task), &host)
 			}
 		}
+
+		logger.Info("Tasks completed successfully")
+		os.Exit(0)
 	}
 
 	fmt.Printf("Error: Task not found: %v\n", taskName)
 	os.Exit(1)
 }
 
-func runWithRunner(task *configuration.Task, host *configuration.Host) {
+func runWithRunner(tasks configuration.TaskCollection, host *configuration.Host) bool {
 	logger.Infof("Selecting host `%v`", host.Host)
 
-	runner, err := core.NewRemoteRunner(host)
-	if err != nil {
-		logger.Fatal(err.Error())
-		os.Exit(1)
+	runner := core.NewRemoteRunner(host)
+
+	for _, task := range tasks {
+		logger.Infof("Executing task `%v`", task.Task)
+
+		// Run
+		err := runner.Run(&task)
+		if err != nil {
+			logger.Fatal(err.Error())
+			os.Exit(1)
+		}
 	}
 
-	if err = runner.Prepare(); err != nil {
-		logger.Fatal(err.Error())
-		os.Exit(1)
-	}
-
-	logger.Infof("Executing task `%v`", task.Task)
-	err = core.RunTask(runner, task)
-	if err != nil {
-		logger.Fatal(err.Error())
-		os.Exit(1)
-	} else {
-		logger.Info("Tasks completed successfully")
-	}
-	os.Exit(0)
+	return true
 }
