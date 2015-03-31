@@ -35,6 +35,7 @@ roles:
           update: true
           packages:
             - linux-image-generic-lts-trusty
+            - apparmor
       - task: Reboot system
         shell:
           sudo: true

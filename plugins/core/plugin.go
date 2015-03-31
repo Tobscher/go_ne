@@ -21,9 +21,9 @@ func RunCommand(name string, sudo bool) error {
 
 	var cmd *exec.Cmd
 	if sudo {
-		cmd = exec.Command("sudo", "sh", tempFile.Name())
+		cmd = exec.Command(sudoCommand, shellCommand, tempFile.Name())
 	} else {
-		cmd = exec.Command("sh", tempFile.Name())
+		cmd = exec.Command(shellCommand, tempFile.Name())
 	}
 
 	// only if verbose

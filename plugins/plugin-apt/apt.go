@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"strings"
 
 	"github.com/tobscher/kiss/plugins/core"
 )
@@ -40,10 +41,10 @@ func (a *Apt) Run() int {
 }
 
 func updateCache(sudo bool) error {
-	return plugin.RunCommand(sudo, "apt-get", "update", "-qq")
+	return plugin.RunCommand("apt-get update -qq", sudo)
 }
 
 func installPackages(sudo bool, packages []string) error {
-	args := append([]string{"install", "-y"}, packages...)
-	return plugin.RunCommand(sudo, "apt-get", args...)
+	packageList := strings.Join(packages, " ")
+	return plugin.RunCommand(fmt.Sprintf("apt-get install -y %v", packageList), sudo)
 }

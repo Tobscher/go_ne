@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	pluginPrefix = "kiss-plugin"
+	pluginPrefix = "plugin"
 )
 
 // StartPlugin starts the plugin with the given name.
@@ -24,35 +24,32 @@ const (
 func RunTask(t *configuration.Task) error {
 	var cmd *exec.Cmd
 
-	for key, plugin := range t.Plugin {
-		fmt.Printf("Starting plugin `%v`\n", key)
-		command := fmt.Sprintf("%v-%v", pluginPrefix, key)
+	plugin := t.Plugin[t.PluginName()]
+	fmt.Printf("Starting plugin `%v`\n", t.PluginName())
+	command := fmt.Sprintf(".kiss/bin/%v-%v", pluginPrefix, t.PluginName())
 
-		cmd = exec.Command(command)
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
+	cmd = exec.Command(command)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
 
-		// Start the plugin
-		stdin, err := cmd.StdinPipe()
-		if err != nil {
-			return err
-		}
-
-		err = cmd.Start()
-		if err != nil {
-			return err
-		}
-
-		options, err := json.Marshal(plugin.Options)
-		if err != nil {
-			return err
-		}
-
-		io.WriteString(stdin, string(options))
-		io.WriteString(stdin, "\n")
-
-		break
+	// Start the plugin
+	stdin, err := cmd.StdinPipe()
+	if err != nil {
+		return err
 	}
+
+	err = cmd.Start()
+	if err != nil {
+		return err
+	}
+
+	options, err := json.Marshal(plugin.Options)
+	if err != nil {
+		return err
+	}
+
+	io.WriteString(stdin, string(options))
+	io.WriteString(stdin, "\n")
 
 	return cmd.Wait()
 }

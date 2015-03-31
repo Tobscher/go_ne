@@ -83,6 +83,10 @@ func runWithRunner(tasks configuration.TaskCollection, host *configuration.Host)
 	logger.Infof("Selecting host `%v`", host.Host)
 
 	runner := core.NewRemoteRunner(host)
+	if err := runner.BeforeAll(); err != nil {
+		logger.Fatal(err.Error())
+		os.Exit(1)
+	}
 
 	for _, task := range tasks {
 		logger.Infof("Executing task `%v`", task.Task)
@@ -93,6 +97,11 @@ func runWithRunner(tasks configuration.TaskCollection, host *configuration.Host)
 			logger.Fatal(err.Error())
 			os.Exit(1)
 		}
+	}
+
+	if err := runner.AfterAll(); err != nil {
+		logger.Fatal(err.Error())
+		os.Exit(1)
 	}
 
 	return true

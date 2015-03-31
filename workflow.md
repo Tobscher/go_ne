@@ -1,7 +1,23 @@
 # Workflow
 
--- Prepare Host  SSH #1
--- Run Task      SSH #2
--- Run Task      SSH #3
--- Run Task      SSH #4
--- Clean-up Host SSH #5
+## BeforeAll
+
+* Gather facts (OS, MACH, Dist, etc.)
+* Check if agent is installed (/opt/kiss/bin/kiss-agent)
+* 
+
+## Prepare host
+
+* Create temporary directory
+
+## Run Tasks
+
+* Run plugin
+
+## Clean-up Host
+
+* Remove temporary directory
+
+## AfterAll
+
+* ??

@@ -1,3 +1,4 @@
 *.exe
 .vagrant/
 kiss
+tmp

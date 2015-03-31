@@ -53,3 +53,11 @@ func (t *Task) JSON() string {
 
 	return string(bytes)
 }
+
+func (t *Task) PluginName() string {
+	for key, _ := range t.Plugin {
+		return key
+	}
+
+	return ""
+}

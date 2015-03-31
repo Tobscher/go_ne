@@ -6,8 +6,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"log"
-	"strconv"
+	"os"
 	"strings"
 	"time"
 
@@ -22,6 +21,7 @@ import (
 // on a remote system via SSH.
 type Remote struct {
 	Host       *configuration.Host
+	Facts      Facts
 	Client     *ssh.Client
 	SftpClient *sftp.Client
 
@@ -36,85 +36,43 @@ func NewRemoteRunner(host *configuration.Host) *Remote {
 	}
 }
 
-// An SSH connection will be established.
-func (r *Remote) Connect() error {
-	client, err := createClient(r.Host.User, r.Host.Password, r.Host.Host, strconv.Itoa(r.Host.Port), r.Host.PrivateKey)
-	if err != nil {
-		return err
-	}
-
-	fileClient, err := createFileClient(client)
-	if err != nil {
-		return err
-	}
-
-	r.Client = client
-	r.SftpClient = fileClient
-
-	return nil
-}
-
-func (r *Remote) runCommand(cmd string) error {
+// RunCommand runs an abritrary command on the remote system.
+func (r *Remote) GatherFacts() (Facts, error) {
 	session, err := r.Client.NewSession()
 	if err != nil {
-		return errors.New("Failed to create session: " + err.Error())
+		return nil, errors.New("Failed to create session: " + err.Error())
 	}
 	defer session.Close()
 
-	logger.Debugf("Executing `%v`", cmd)
-	if err := session.Start(cmd); err != nil {
-		return err
+	logger.Debugf("Gathering facts")
+
+	stdout, err := session.StdoutPipe()
+	if err != nil {
+		return nil, err
+	}
+
+	if err := session.Start(gather); err != nil {
+		return nil, err
 	}
 
 	if err = session.Wait(); err != nil {
-		return err
+		return nil, err
 	}
 
-	return nil
-}
+	facts := make(Facts)
 
-func (r *Remote) uploadFile(from string, to string) error {
-	logger.Tracef("Uploading file from `%v` to `%v`\n", from, to)
-
-	return nil
-}
-
-func (r *Remote) makeDirectory(path string) error {
-	logger.Tracef("Creating directory `%v`\n", path)
-	err := r.SftpClient.Mkdir(path)
-	if err != nil {
-		return err
+	scanner := bufio.NewScanner(stdout)
+	for scanner.Scan() {
+		parts := strings.Split(scanner.Text(), " = ")
+		facts[parts[0]] = parts[1]
 	}
 
-	return nil
+	return facts, nil
 }
 
-func (r *Remote) remove(path string, checkError bool) error {
-	logger.Tracef("Removing file/directory `%v`\n", path)
-	err := r.SftpClient.Remove(path)
-	if err != nil {
-		if checkError {
-			return err
-		}
-	}
-
-	return nil
-}
-
-func (r *Remote) fileExists(path string) bool {
-	logger.Tracef("Checking if file exists `%v`\n", path)
-
-	_, err := r.SftpClient.Lstat(path)
-	if err != nil {
-		return false
-	}
-
-	return true
-}
-
-// Run runs the given task on the remote system
+// Run runs the given task on the remote system.
 func (r *Remote) Run(t *configuration.Task) error {
-	if err := r.Prepare(); err != nil {
+	if err := r.Prepare(t); err != nil {
 		return err
 	}
 
@@ -139,7 +97,43 @@ func (r *Remote) Run(t *configuration.Task) error {
 	return nil
 }
 
-func (r *Remote) Prepare() error {
+func (r *Remote) BeforeAll() error {
+	r.Connect()
+	defer r.Close()
+
+	// Gather facts
+	facts, err := r.GatherFacts()
+	if err != nil {
+		return err
+	}
+
+	r.Facts = facts
+
+	// Check that agent is installed
+	// if not either compile and upload (or simply download)
+	if !r.fileExists(agent) {
+		logger.Warnf("Agent is not installed on the remote system: %v", agent)
+		logger.Infof("Compiling agent for %v/%v", facts.OS(), facts.Arch())
+		file, err := compileDirectory("./agent", facts.OS(), facts.Arch())
+		if err != nil {
+			return err
+		}
+
+		if err = r.uploadFile(*file, agent); err != nil {
+			return err
+		}
+
+		if err = r.chmod(agent, os.FileMode(0755)); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// Prepare prepares the remote system so it can run plugins. This will do the following:
+// * Create temp directory /tmp/kiss/<current_datetime>
+func (r *Remote) Prepare(task *configuration.Task) error {
 	logger.Debug("Preparing remote machine")
 
 	r.Connect()
@@ -152,9 +146,28 @@ func (r *Remote) Prepare() error {
 		return err
 	}
 
+	plugin := fmt.Sprintf("%v/%v-%v", pluginDirectory, pluginPrefix, task.PluginName())
+	if !r.fileExists(plugin) {
+		logger.Warnf("Plugin is not installed on the remote system: %v", plugin)
+		logger.Infof("Compiling %v for %v/%v", task.PluginName(), r.Facts.OS(), r.Facts.Arch())
+		file, err := compileDirectory(fmt.Sprintf("./plugins/%v-%v", pluginPrefix, task.PluginName()), r.Facts.OS(), r.Facts.Arch())
+		if err != nil {
+			return err
+		}
+
+		if err = r.uploadFile(*file, plugin); err != nil {
+			return err
+		}
+
+		if err = r.chmod(plugin, os.FileMode(0755)); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
+// Execute executes the task on the remote system via the runner.
 func (r *Remote) Execute(t *configuration.Task) error {
 	logger.Debug("Executing task...")
 
@@ -169,7 +182,7 @@ func (r *Remote) Execute(t *configuration.Task) error {
 	commands := []string{
 		"env",
 		fmt.Sprintf("KISS_TMP_DIR=%v", r.tempDir),
-		"kiss-agent",
+		agent,
 	}
 	cmd := strings.Join(commands, " ")
 
@@ -202,7 +215,7 @@ func (r *Remote) Execute(t *configuration.Task) error {
 	}
 
 	if err := session.Start(cmd); err != nil {
-		return err
+		return fmt.Errorf("Command error: %v", err)
 	}
 
 	io.WriteString(stdin, t.JSON())
@@ -215,19 +228,13 @@ func (r *Remote) Execute(t *configuration.Task) error {
 			return fmt.Errorf("Error reading from stderr: %v", bufErr)
 		}
 
-		return fmt.Errorf("%v: %v", err, string(bytes))
+		return fmt.Errorf("%v: %v", err.Error(), string(bytes))
 	}
 
 	return nil
 }
 
-// Close closes the SSH connection to the remote system
-func (r *Remote) Close() {
-	logger.Debug("Closing connection to remote machine")
-	r.SftpClient.Close()
-	r.Client.Close()
-}
-
+// CleanUp removes the temporary directory on the remote system.
 func (r *Remote) CleanUp() error {
 	logger.Debug("Cleaning up remote machine")
 	r.Connect()
@@ -236,66 +243,7 @@ func (r *Remote) CleanUp() error {
 	return r.remove(r.tempDir, false)
 }
 
-func createClient(username, password, host, port, key string) (*ssh.Client, error) {
-	authMethods := []ssh.AuthMethod{}
-
-	if len(password) > 0 {
-		authMethods = append(authMethods, ssh.Password(password))
-	}
-
-	if len(key) > 0 {
-		priv, err := loadKey(key)
-		if err != nil {
-			log.Println(err)
-		} else {
-			signers, err := ssh.NewSignerFromKey(priv)
-			if err != nil {
-				log.Println(err)
-			} else {
-				authMethods = append(authMethods, ssh.PublicKeys(signers))
-			}
-		}
-	}
-
-	config := &ssh.ClientConfig{
-		User: username,
-		Auth: authMethods,
-	}
-
-	if len(port) == 0 {
-		port = "22"
-	}
-
-	remoteServer := fmt.Sprintf("%v:%v", host, port)
-
-	logger.Debugf("Connecting to %v@%v", username, remoteServer)
-	client, err := ssh.Dial("tcp", remoteServer, config)
-	if err != nil {
-		return nil, err
-	}
-
-	return client, nil
-}
-
-func createFileClient(client *ssh.Client) (*sftp.Client, error) {
-	sftp, err := sftp.NewClient(client)
-	if err != nil {
-		return nil, err
-	}
-
-	return sftp, nil
-}
-
-func loadKey(file string) (interface{}, error) {
-	buf, err := ioutil.ReadFile(file)
-	if err != nil {
-		return nil, err
-	}
-
-	key, err := ssh.ParseRawPrivateKey(buf)
-	if err != nil {
-		return nil, err
-	}
-
-	return key, nil
+// AfterAll runs post task scripts.
+func (r *Remote) AfterAll() error {
+	return nil
 }
