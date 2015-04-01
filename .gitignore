@@ -2,3 +2,4 @@
 .vagrant/
 kiss
 tmp
+.goxc.local.json
