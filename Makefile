@@ -26,7 +26,7 @@ plugins: deps
 	cd "plugins" && go install -v $(PLUGINS)
 
 kiss-xc: deps
-	goxc -os=$(OS) -arch=$(ARCH)
+	goxc -os=$(OS) -arch=$(ARCH) -main-dirs-exclude=Godeps,agent,plugins,downloader
 
 kiss-bintray: kiss-xc
 	goxc bintray
