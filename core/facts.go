@@ -16,6 +16,10 @@ func (f Facts) Arch() string {
 		return "amd64"
 	}
 
+	if arch == "i686" {
+		return "386"
+	}
+
 	return arch
 }
 
