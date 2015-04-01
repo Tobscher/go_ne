@@ -98,7 +98,10 @@ func (r *Remote) Run(t *configuration.Task) error {
 }
 
 func (r *Remote) BeforeAll() error {
-	r.Connect()
+	if err := r.Connect(); err != nil {
+		return err
+	}
+
 	defer r.Close()
 
 	// Gather facts
@@ -136,7 +139,9 @@ func (r *Remote) BeforeAll() error {
 func (r *Remote) Prepare(task *configuration.Task) error {
 	logger.Debug("Preparing remote machine")
 
-	r.Connect()
+	if err := r.Connect(); err != nil {
+		return err
+	}
 	defer r.Close()
 	r.makeDirectory("/tmp/kiss")
 
@@ -171,7 +176,9 @@ func (r *Remote) Prepare(task *configuration.Task) error {
 func (r *Remote) Execute(t *configuration.Task) error {
 	logger.Debug("Executing task...")
 
-	r.Connect()
+	if err := r.Connect(); err != nil {
+		return err
+	}
 	defer r.Close()
 
 	session, err := r.Client.NewSession()
@@ -237,7 +244,10 @@ func (r *Remote) Execute(t *configuration.Task) error {
 // CleanUp removes the temporary directory on the remote system.
 func (r *Remote) CleanUp() error {
 	logger.Debug("Cleaning up remote machine")
-	r.Connect()
+
+	if err := r.Connect(); err != nil {
+		return err
+	}
 	defer r.Close()
 
 	return r.remove(r.tempDir, false)
