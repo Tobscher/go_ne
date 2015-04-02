@@ -9,13 +9,25 @@ import (
 
 var logger = logging.GetLogger("kiss")
 
+type Agent struct {
+	Path  string
+	Force bool
+}
+
+type PluginConfig struct {
+	Path  string
+	Force bool
+}
+
 // Configuration holds information about
 // variables, hosts and tasks.
 type Configuration struct {
-	Vars  map[string]string
-	Hosts HostCollection
-	Tasks TaskCollection
-	Roles RoleCollection
+	Vars    map[string]string
+	Hosts   HostCollection
+	Tasks   TaskCollection
+	Roles   RoleCollection
+	Agent   Agent
+	Plugins map[string]PluginConfig
 }
 
 // Load loads configuration from the given path.

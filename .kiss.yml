@@ -1,3 +1,15 @@
+# agent:
+#   path: "./agent"
+#   force: true
+
+# plugins:
+#   apt:
+#     path: "./plugins/plugin-apt"
+#     force: true
+#   shell:
+#     path: "./plugins/plugin-shell"
+#     force: true
+
 # Global vars
 vars:
   application: go-example-app

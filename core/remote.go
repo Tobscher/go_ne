@@ -21,6 +21,7 @@ import (
 // on a remote system via SSH.
 type Remote struct {
 	Host       *configuration.Host
+	Config     *configuration.Configuration
 	Facts      Facts
 	Client     *ssh.Client
 	SftpClient *sftp.Client
@@ -30,14 +31,21 @@ type Remote struct {
 
 // NewRemoteRunner creates a new runner which runs
 // tasks on a remote system.
-func NewRemoteRunner(host *configuration.Host) *Remote {
+func NewRemoteRunner(host *configuration.Host, config *configuration.Configuration) *Remote {
 	return &Remote{
-		Host: host,
+		Host:   host,
+		Config: config,
 	}
 }
 
 // RunCommand runs an abritrary command on the remote system.
 func (r *Remote) GatherFacts() (Facts, error) {
+	if err := r.Connect(); err != nil {
+		return nil, err
+	}
+
+	defer r.Close()
+
 	session, err := r.Client.NewSession()
 	if err != nil {
 		return nil, errors.New("Failed to create session: " + err.Error())
@@ -97,13 +105,7 @@ func (r *Remote) Run(t *configuration.Task) error {
 	return nil
 }
 
-func (r *Remote) BeforeAll() error {
-	if err := r.Connect(); err != nil {
-		return err
-	}
-
-	defer r.Close()
-
+func (r *Remote) BeforeAll(tasks configuration.TaskCollection) error {
 	// Gather facts
 	facts, err := r.GatherFacts()
 	if err != nil {
@@ -112,22 +114,66 @@ func (r *Remote) BeforeAll() error {
 
 	r.Facts = facts
 
-	// Check that agent is installed
-	// if not either compile and upload (or simply download)
+	// Check for agent
+	if r.Config.Agent.Force {
+		r.remove(agent, false)
+	}
+
 	if !r.fileExists(agent) {
 		logger.Warnf("Agent is not installed on the remote system: %v", agent)
-		logger.Infof("Compiling agent for %v/%v", facts.OS(), facts.Arch())
-		file, err := compileDirectory("./agent", facts.OS(), facts.Arch())
-		if err != nil {
-			return err
+
+		// When configured to use local file
+		if r.Config.Agent.Path != "" {
+			logger.Infof("Compiling agent for %v/%v", facts.OS(), facts.Arch())
+
+			file, err := compileDirectory(r.Config.Agent.Path, facts.OS(), facts.Arch())
+			if err != nil {
+				return err
+			}
+
+			if err = r.uploadFile(*file, agent); err != nil {
+				return err
+			}
+
+			if err = r.chmod(agent, os.FileMode(0755)); err != nil {
+				return err
+			}
+		} else {
+			downloadUrl := bintrayDownloadUrl(agentName, facts.OS(), facts.Arch())
+			r.downloadFile(downloadUrl)
+		}
+	}
+
+	// Check for plugins
+	for _, pluginName := range tasks.UniquePluginNames() {
+		plugin := fmt.Sprintf("%v/%v-%v", pluginDirectory, pluginPrefix, pluginName)
+		pluginConfig := r.Config.Plugins[pluginName]
+
+		if pluginConfig.Force {
+			r.remove(plugin, false)
 		}
 
-		if err = r.uploadFile(*file, agent); err != nil {
-			return err
-		}
+		if !r.fileExists(plugin) {
+			logger.Warnf("Plugin is not installed on the remote system: %v", plugin)
 
-		if err = r.chmod(agent, os.FileMode(0755)); err != nil {
-			return err
+			if pluginConfig.Path != "" {
+				logger.Infof("Compiling %v-%v for %v/%v", pluginPrefix, pluginName, r.Facts.OS(), r.Facts.Arch())
+				file, err := compileDirectory(r.Config.Plugins[pluginName].Path, r.Facts.OS(), r.Facts.Arch())
+				if err != nil {
+					return err
+				}
+
+				if err = r.uploadFile(*file, plugin); err != nil {
+					return err
+				}
+
+				if err = r.chmod(plugin, os.FileMode(0755)); err != nil {
+					return err
+				}
+			} else {
+				downloadUrl := bintrayDownloadUrl(fmt.Sprintf("%v-%v", pluginPrefix, pluginName), facts.OS(), facts.Arch())
+				r.downloadFile(downloadUrl)
+			}
 		}
 	}
 
@@ -149,24 +195,6 @@ func (r *Remote) Prepare(task *configuration.Task) error {
 	r.tempDir = fmt.Sprintf("/tmp/kiss/%v", t.Format("20060102150405"))
 	if err := r.makeDirectory(r.tempDir); err != nil {
 		return err
-	}
-
-	plugin := fmt.Sprintf("%v/%v-%v", pluginDirectory, pluginPrefix, task.PluginName())
-	if !r.fileExists(plugin) {
-		logger.Warnf("Plugin is not installed on the remote system: %v", plugin)
-		logger.Infof("Compiling %v for %v/%v", task.PluginName(), r.Facts.OS(), r.Facts.Arch())
-		file, err := compileDirectory(fmt.Sprintf("./plugins/%v-%v", pluginPrefix, task.PluginName()), r.Facts.OS(), r.Facts.Arch())
-		if err != nil {
-			return err
-		}
-
-		if err = r.uploadFile(*file, plugin); err != nil {
-			return err
-		}
-
-		if err = r.chmod(plugin, os.FileMode(0755)); err != nil {
-			return err
-		}
 	}
 
 	return nil

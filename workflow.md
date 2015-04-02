@@ -4,7 +4,6 @@
 
 * Gather facts (OS, MACH, Dist, etc.)
 * Check if agent is installed (/opt/kiss/bin/kiss-agent)
-* 
 
 ## Prepare host
 

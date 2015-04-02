@@ -1,13 +1,18 @@
 package core
 
 import (
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"os"
 	"os/exec"
 	"path"
+	"strings"
 )
 
 var (
-	compiler = "goxc"
+	compiler       = "goxc"
+	defaultVersion = "snapshot"
 )
 
 func compileDirectory(directory string, targetOs string, targetArch string) (*string, error) {
@@ -34,7 +39,34 @@ func compileDirectory(directory string, targetOs string, targetArch string) (*st
 		return nil, err
 	}
 
+	version := goxcVersion(directory)
+
 	directoryName := path.Base(directory)
-	file := fmt.Sprintf("%v/tmp/snapshot/%v_%v/%v", directory, targetOs, targetArch, directoryName)
+	file := fmt.Sprintf("%v/tmp/%v/%v_%v/%v", directory, version, targetOs, targetArch, directoryName)
 	return &file, nil
+}
+
+func goxcVersion(directory string) string {
+	filePath := strings.Join([]string{directory, ".goxc.json"}, "/")
+	file, err := os.Open(filePath)
+	if err != nil {
+		return defaultVersion
+	}
+	defer file.Close()
+
+	bytes, err := ioutil.ReadAll(file)
+	if err != nil {
+		return defaultVersion
+	}
+
+	var config struct {
+		PackageVersion string
+	}
+
+	err = json.Unmarshal(bytes, &config)
+	if err != nil {
+		return defaultVersion
+	}
+
+	return config.PackageVersion
 }

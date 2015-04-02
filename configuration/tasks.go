@@ -37,6 +37,28 @@ func (t TaskCollection) Get(name string) *Task {
 	return nil
 }
 
+func (tasks TaskCollection) UniquePluginNames() []string {
+	var plugins []string
+
+	for _, t := range tasks {
+		for key, _ := range t.Plugin {
+			found := false
+			for _, a := range plugins {
+				if a == key {
+					found = true
+					break
+				}
+			}
+
+			if !found {
+				plugins = append(plugins, key)
+			}
+		}
+	}
+
+	return plugins
+}
+
 func NewTaskCollection(tasks ...Task) TaskCollection {
 	var result TaskCollection
 

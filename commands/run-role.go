@@ -53,7 +53,7 @@ func runRoleRun(cmd *cobra.Command, args []string) {
 
 	logger.Infof("Running role `%v`", roleName)
 	for _, host := range config.Hosts.WithRole(roleName) {
-		runWithRunner(role.Tasks, &host)
+		runWithRunner(role.Tasks, &host, config)
 	}
 
 	logger.Info("Tasks completed successfully")
